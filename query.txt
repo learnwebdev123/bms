@@ -1,0 +1,96 @@
+/* 
+ * Query to fetch all movie shows for a specific theatre and date
+ * Returns show details including available seats count
+ * Used in: Theatre show listing page
+ */
+
+SELECT 
+    -- Basic movie information
+    m.title,
+    m.certification,
+    m.language,
+    
+    -- Show timing and format details
+    s.show_time,
+    s.format,
+    sc.screen_type,
+    s.base_price,
+    
+    -- Calculate number of available seats for the show
+    COUNT(ss.show_seat_id) as available_seats
+FROM 
+    -- Start with theatre and join related tables
+    Theatre t
+    -- Join with screens in the theatre
+    INNER JOIN Screen sc ON t.theatre_id = sc.theatre_id
+    -- Join with shows running on these screens
+    INNER JOIN `Show` s ON sc.screen_id = s.screen_id
+    -- Get movie details for each show
+    INNER JOIN Movie m ON s.movie_id = m.movie_id
+    -- Left join with show seats to count available seats
+    LEFT JOIN ShowSeat ss ON s.show_id = ss.show_id AND ss.status = 'Available'
+WHERE 
+    t.theatre_id = 1  -- Specify theatre (e.g., PVR Nexus)
+    AND s.show_date = '2024-03-25'  -- Specify date to fetch shows
+GROUP BY 
+    -- Group by all selected columns except the count
+    m.title,
+    m.certification,
+    m.language,
+    s.show_time,
+    s.format,
+    sc.screen_type,
+    s.base_price
+ORDER BY 
+    s.show_time ASC;  -- Sort shows by time, earliest first
+
+
+/* 
+ * Stored Procedure: GetTheatreShows
+ * Purpose: Fetch all shows for a given theatre on a specific date
+ * Parameters:
+ *   - p_theatre_id: ID of the theatre
+ *   - p_show_date: Date for which to fetch shows
+ */
+DELIMITER //
+
+CREATE PROCEDURE GetTheatreShows(
+    IN p_theatre_id INT,  -- Theatre ID parameter
+    IN p_show_date DATE  -- Show date parameter
+)
+BEGIN
+    -- Same query as above but with parameterized values
+    SELECT 
+        m.title,
+        m.certification,
+        m.language,
+        s.show_time,
+        s.format,
+        sc.screen_type,
+        s.base_price,
+        COUNT(ss.show_seat_id) as available_seats
+    FROM 
+        Theatre t
+        INNER JOIN Screen sc ON t.theatre_id = sc.theatre_id
+        INNER JOIN `Show` s ON sc.screen_id = s.screen_id
+        INNER JOIN Movie m ON s.movie_id = m.movie_id
+        LEFT JOIN ShowSeat ss ON s.show_id = ss.show_id AND ss.status = 'Available'
+    WHERE 
+        t.theatre_id = p_theatre_id  -- Use parameter instead of hardcoded value
+        AND s.show_date = p_show_date  -- Use parameter instead of hardcoded value
+    GROUP BY 
+        m.title,
+        m.certification,
+        m.language,
+        s.show_time,
+        s.format,
+        sc.screen_type,
+        s.base_price
+    ORDER BY 
+        s.show_time ASC;
+END //
+
+DELIMITER ;
+
+-- Example usage of the stored procedure
+CALL GetTheatreShows(1, '2024-03-25');

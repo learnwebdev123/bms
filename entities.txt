@@ -1,0 +1,168 @@
+1. Movie
+   Attributes:
+   - movie_id (PK)
+   - title
+   - language
+   - duration
+   - certification (UA, A, etc.)
+   - description
+   - poster_url
+
+2. Theatre
+   Attributes:
+   - theatre_id (PK)
+   - name
+   - location
+   - address
+   - city
+   - total_screens
+   - status (active/inactive)
+
+3. Screen
+   Attributes:
+   - screen_id (PK)
+   - theatre_id (FK)
+   - screen_number
+   - seating_capacity
+   - screen_type (Regular/IMAX/4DX)
+
+4. Show
+   Attributes:
+   - show_id (PK)
+   - movie_id (FK)
+   - screen_id (FK)
+   - show_date
+   - show_time
+   - language
+   - format (2D/3D)
+   - base_price
+
+5. Seat
+   Attributes:
+   - seat_id (PK)
+   - screen_id (FK)
+   - row_number
+   - seat_number
+   - category (Premium/Regular)
+
+6. ShowSeat
+   Attributes:
+   - show_seat_id (PK)
+   - show_id (FK)
+   - seat_id (FK)
+   - status (Available/Booked/Reserved)
+   - price
+
+Table Relationships:
+- Theatre has many Screens (1:N)
+- Screen has many Shows (1:N)
+- Movie has many Shows (1:N)
+- Screen has many Seats (1:N)
+- Show has many ShowSeats (1:N)
+- Seat has many ShowSeats (1:N)
+
+
+-- Create Movie table
+CREATE TABLE Movie (
+    movie_id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    language VARCHAR(50) NOT NULL,
+    duration INT NOT NULL, -- in minutes
+    certification VARCHAR(10) NOT NULL,
+    description TEXT,
+    poster_url VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Create Theatre table
+CREATE TABLE Theatre (
+    theatre_id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    address TEXT NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    total_screens INT NOT NULL,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create Screen table
+CREATE TABLE Screen (
+    screen_id INT PRIMARY KEY AUTO_INCREMENT,
+    theatre_id INT NOT NULL,
+    screen_number INT NOT NULL,
+    seating_capacity INT NOT NULL,
+    screen_type ENUM('Regular', 'IMAX', '4DX') DEFAULT 'Regular',
+    FOREIGN KEY (theatre_id) REFERENCES Theatre(theatre_id),
+    UNIQUE KEY unique_screen_theatre (theatre_id, screen_number)
+);
+
+-- Create Show table
+CREATE TABLE `Show` (
+    show_id INT PRIMARY KEY AUTO_INCREMENT,
+    movie_id INT NOT NULL,
+    screen_id INT NOT NULL,
+    show_date DATE NOT NULL,
+    show_time TIME NOT NULL,
+    language VARCHAR(50) NOT NULL,
+    format ENUM('2D', '3D') DEFAULT '2D',
+    base_price DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (movie_id) REFERENCES Movie(movie_id),
+    FOREIGN KEY (screen_id) REFERENCES Screen(screen_id)
+);
+
+-- Create Seat table
+CREATE TABLE Seat (
+    seat_id INT PRIMARY KEY AUTO_INCREMENT,
+    screen_id INT NOT NULL,
+    row_number VARCHAR(5) NOT NULL,
+    seat_number INT NOT NULL,
+    category ENUM('Premium', 'Regular') DEFAULT 'Regular',
+    FOREIGN KEY (screen_id) REFERENCES Screen(screen_id),
+    UNIQUE KEY unique_seat (screen_id, row_number, seat_number)
+);
+
+-- Create ShowSeat table
+CREATE TABLE ShowSeat (
+    show_seat_id INT PRIMARY KEY AUTO_INCREMENT,
+    show_id INT NOT NULL,
+    seat_id INT NOT NULL,
+    status ENUM('Available', 'Booked', 'Reserved') DEFAULT 'Available',
+    price DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (show_id) REFERENCES `Show`(show_id),
+    FOREIGN KEY (seat_id) REFERENCES Seat(seat_id)
+);
+
+-- Sample Data Insertion
+-- Insert Movies
+INSERT INTO Movie (title, language, duration, certification, description) VALUES
+('Dasara', 'Telugu', 150, 'UA', 'Telugu action drama film'),
+('Kisi Ka Bhai Kisi Ki Jaan', 'Hindi', 145, 'UA', 'Hindi action drama film'),
+('Avatar: The Way of Water', 'English', 192, 'UA', 'Science fiction film');
+
+-- Insert Theatre
+INSERT INTO Theatre (name, location, address, city, total_screens) VALUES
+('PVR Nexus', 'Forum Mall', '21/5, Forum Mall, Koramangala', 'Bangalore', 4);
+
+-- Insert Screens
+INSERT INTO Screen (theatre_id, screen_number, seating_capacity, screen_type) VALUES
+(1, 1, 150, 'Regular'),
+(1, 2, 200, 'IMAX');
+
+-- Insert Seats (Sample for first row of Screen 1)
+INSERT INTO Seat (screen_id, row_number, seat_number, category) VALUES
+(1, 'A', 1, 'Premium'),
+(1, 'A', 2, 'Premium'),
+(1, 'A', 3, 'Premium');
+
+-- Insert Shows
+INSERT INTO `Show` (movie_id, screen_id, show_date, show_time, language, format, base_price) VALUES
+(1, 1, '2024-03-25', '10:30:00', 'Telugu', '2D', 250.00),
+(2, 2, '2024-03-25', '13:45:00', 'Hindi', '3D', 350.00);
+
+-- Insert ShowSeats
+INSERT INTO ShowSeat (show_id, seat_id, status, price) VALUES
+(1, 1, 'Available', 250.00),
+(1, 2, 'Available', 250.00),
+(1, 3, 'Booked', 250.00);
